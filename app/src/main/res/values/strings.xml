@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Scan and Pair RFD40</string>
+
+    <!-- Status Messages -->
+    <string name="status_unpairing">Unpairing All Readers...</string>
+    <string name="status_scanning">Scanning for %1$s...</string>
+    <string name="status_pairing">Pairing %1$s...\nPress Reader Yellow Trigger button to finalize.</string>
+    <string name="status_please_wait">Please wait...</string>
+
+    <!-- Error/Info Messages -->
+    <string name="error_scanning_failed">ERROR - Scanning barcode failed!</string>
+    <string name="error_invalid_bt_address">%1$s is not a valid BT address</string>
+    <string name="error_device_not_found">Done scanning. Device NOT found.</string>
+    <string name="error_pairing_failed">ERROR - Pairing failed!</string>
+    <string name="error_pairing_timeout">ERROR - Pairing failed (timeout)!</string>
+    <string name="error_unpairing_failed">ERROR - Unpairing failed!</string>
+    <string name="error_unpairing_no_paired">INFO - No paired reader!</string>
+    <string name="error_unpairing_timeout">ERROR - Unpairing failed (timeout)!</string>
+
+    <string name="info_already_paired_connecting">Device already paired. Connecting...</string>
+    <string name="info_unpairing_done">Unpairing done</string>
+    <string name="info_pairing">Pairing with %1$s</string>
+
+    <!-- UI Labels -->
+    <string name="label_scan_hint">S/N or BT MAC</string>
+    <string name="label_pair">PAIR</string>
+    <string name="label_paired_readers">Paired RFID readers</string>
+    <string name="label_scan_instruction">Scan barcode or enter value</string>
+</resources>
