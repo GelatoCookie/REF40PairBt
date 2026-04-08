@@ -165,15 +165,21 @@ public class ScanPair {
                 Log.d(TAG, "pairConnect nothing found");
                 if (isMacAddress) {
                     showToast(R.string.info_pairing, recvdMacAddress);
-                    btConnection.pair(recvdMacAddress);
-                    isDevicePairing = true;
+                    int pairResult = btConnection.pair(recvdMacAddress);
+                    if (pairResult == Defines.NO_ERROR) {
+                        isDevicePairing = true;
+                        connecting_pairingFlag = true;
+                    } else {
+                        showToast(R.string.error_pairing_failed);
+                        pairingConnectIdleFlag = true;
+                    }
                 } else {
                     if (listener != null) {
                         listener.onOperationStarted(R.string.status_scanning, recvdBarcodeName);
                     }
                     btConnection.scanningDevices(recvdBarcodeName, false);
+                    connecting_pairingFlag = true;
                 }
-                connecting_pairingFlag = true;
             }
         } catch (Exception ex) {
             ex.printStackTrace();

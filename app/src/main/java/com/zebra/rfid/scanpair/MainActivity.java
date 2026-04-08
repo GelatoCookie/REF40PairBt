@@ -43,8 +43,10 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
     private AdapterView.OnItemClickListener mItemClick = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            String readerDevice = (String) mAdapter.getItem(position);
-            scanPair.unpair(readerDevice);
+            String readerDevice = mAdapter.getItem(position);
+            if (readerDevice != null && scanPair != null) {
+                scanPair.unpair(readerDevice);
+            }
         }
     };
 
@@ -105,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
             scanPair.Init(this);
             scanPair.setListener(this);
 
-            mAdapter = new ArrayAdapter(this, R.layout.readers_list_item, scanPair.readers);
+            mAdapter = new ArrayAdapter<>(this, R.layout.readers_list_item, scanPair.readers);
 
             ListView list = findViewById(R.id.readerList);
             list.setAdapter(mAdapter);
@@ -135,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
         if (scanPair != null) {
             scanPair.onDestroy();
         }
+        toneHandler.removeCallbacksAndMessages(null);
         if (toneGenerator != null) {
             toneGenerator.release();
             toneGenerator = null;
@@ -223,10 +226,6 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 permissionsNeeded.add(Manifest.permission.BLUETOOTH_CONNECT);
             }
-            // Even on Android 12+, some legacy Bluetooth APIs or specific device behaviors might still require Location
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
-            }
         } else {
             // Android 11 and below
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -264,10 +263,14 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
                 }
             }
 
-            if (bluetoothGranted && locationGranted) {
+            boolean needsLocation = Build.VERSION.SDK_INT < Build.VERSION_CODES.S;
+            if (bluetoothGranted && (!needsLocation || locationGranted)) {
                 initScanPair();
             } else {
-                Toast.makeText(this, "Bluetooth and Location permissions are required for this app to function.", Toast.LENGTH_LONG).show();
+                String permissionMessage = needsLocation
+                        ? "Bluetooth and Location permissions are required for this app to function."
+                        : "Bluetooth permissions are required for this app to function.";
+                Toast.makeText(this, permissionMessage, Toast.LENGTH_LONG).show();
             }
         }
     }

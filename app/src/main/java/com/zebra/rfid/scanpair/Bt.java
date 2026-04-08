@@ -92,6 +92,7 @@ public class Bt {
 
     public void onDestroy() {
         unregisterReceiverIfNeeded();
+        scheduler.shutdownNow();
     }
 
     public int abortOperation() {
@@ -132,6 +133,7 @@ public class Bt {
         } catch (SecurityException e) {
             Log.e(TAG, "Permission denied for startDiscovery", e);
         }
+        scheduler.schedule(this::abortOperation, SCANNING_TIMEOUT, TimeUnit.MILLISECONDS);
         return (0);
     }
 
