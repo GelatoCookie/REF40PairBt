@@ -1,9 +1,13 @@
 package com.zebra.rfid.scanpair;
 
 import android.Manifest;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -20,6 +24,7 @@ import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements ScanPair.ScanPairListener {
 
@@ -31,6 +36,8 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
     EditText scanCode;
     View loadingOverlay;
     TextView loadingText;
+    private ToneGenerator toneGenerator;
+    private final Handler toneHandler = new Handler(Looper.getMainLooper());
 
     private ArrayAdapter<String> mAdapter;
     private AdapterView.OnItemClickListener mItemClick = new AdapterView.OnItemClickListener() {
@@ -51,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
         loadingOverlay = findViewById(R.id.loadingOverlay);
         loadingText = findViewById(R.id.loadingText);
         applyLaunchInput();
+        toneGenerator = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
 
         buttonClear = findViewById(R.id.buttonClear);
         buttonClear.setOnClickListener(new View.OnClickListener() {
@@ -126,6 +134,81 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
         super.onDestroy();
         if (scanPair != null) {
             scanPair.onDestroy();
+        }
+        if (toneGenerator != null) {
+            toneGenerator.release();
+            toneGenerator = null;
+        }
+    }
+
+    private void playPattern(int toneType, int repeatCount) {
+        if (toneGenerator == null || repeatCount <= 0) {
+            return;
+        }
+
+        final int toneDurationMs = 180;
+        final int gapMs = 110;
+        for (int i = 0; i < repeatCount; i++) {
+            final int delay = i * (toneDurationMs + gapMs);
+            toneHandler.postDelayed(() -> {
+                if (toneGenerator != null) {
+                    toneGenerator.startTone(toneType, toneDurationMs);
+                }
+            }, delay);
+        }
+    }
+
+    private void playWarningBeep() {
+        playPattern(ToneGenerator.TONE_PROP_BEEP, 1);
+    }
+
+    private void playConfirmationBeepTwice() {
+        playPattern(ToneGenerator.TONE_PROP_ACK, 2);
+    }
+
+    private void playErrorBeepThreeTimes() {
+        playPattern(ToneGenerator.TONE_SUP_ERROR, 3);
+    }
+
+    private void handleMessageTone(int messageResId) {
+        if (messageResId == R.string.error_device_not_found) {
+            playWarningBeep();
+            return;
+        }
+
+        if (messageResId == R.string.info_already_paired_connecting) {
+            playConfirmationBeepTwice();
+            return;
+        }
+
+        try {
+            String entryName = getResources().getResourceEntryName(messageResId);
+            if (entryName != null && entryName.startsWith("error_")) {
+                playErrorBeepThreeTimes();
+            }
+        } catch (Exception ignored) {
+            // Ignore invalid/non-app resources for tone mapping.
+        }
+    }
+
+    private void handleMessageTone(String message) {
+        if (message == null) {
+            return;
+        }
+
+        String normalized = message.toLowerCase(Locale.US);
+        if (normalized.contains("device not found")) {
+            playWarningBeep();
+            return;
+        }
+
+        if (normalized.contains("already paired") || normalized.contains("device ready to connect")) {
+            playConfirmationBeepTwice();
+            return;
+        }
+
+        if (normalized.contains("error")) {
+            playErrorBeepThreeTimes();
         }
     }
 
@@ -227,6 +310,7 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
     public void onMessage(int messageResId, Object... formatArgs) {
         runOnUiThread(() -> {
             Toast.makeText(MainActivity.this, getString(messageResId, formatArgs), Toast.LENGTH_SHORT).show();
+            handleMessageTone(messageResId);
         });
     }
 
@@ -234,6 +318,7 @@ public class MainActivity extends AppCompatActivity implements ScanPair.ScanPair
     public void onMessage(String message) {
         runOnUiThread(() -> {
             Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+            handleMessageTone(message);
         });
     }
 }
